@@ -35,7 +35,7 @@ import SQLite3
 #endif
 
 /// A connection to SQLite.
-public final class Connection {
+public final class SqlConnection {
 
     /// The location of a SQLite database.
     public enum Location {
@@ -109,7 +109,7 @@ public final class Connection {
                                   &_handle,
                                   flags | SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_URI,
                                   nil))
-        queue.setSpecific(key: Connection.queueKey, value: queueContext)
+        queue.setSpecific(key: SqlConnection.queueKey, value: queueContext)
     }
 
     /// Initializes a new connection to a database.
@@ -186,9 +186,9 @@ public final class Connection {
     ///   - bindings: A list of parameters to bind to the statement.
     ///
     /// - Returns: A prepared statement.
-    public func prepare(_ statement: String, _ bindings: Binding?...) throws -> Statement {
+    public func prepare(_ statement: String, _ bindings: Binding?...) throws -> SqlStatement {
         if !bindings.isEmpty { return try prepare(statement, bindings) }
-        return try Statement(self, statement)
+        return try SqlStatement(self, statement)
     }
 
     /// Prepares a single SQL statement and binds parameters to it.
@@ -200,7 +200,7 @@ public final class Connection {
     ///   - bindings: A list of parameters to bind to the statement.
     ///
     /// - Returns: A prepared statement.
-    public func prepare(_ statement: String, _ bindings: [Binding?]) throws -> Statement {
+    public func prepare(_ statement: String, _ bindings: [Binding?]) throws -> SqlStatement {
         try prepare(statement).bind(bindings)
     }
 
@@ -213,7 +213,7 @@ public final class Connection {
     ///   - bindings: A dictionary of named parameters to bind to the statement.
     ///
     /// - Returns: A prepared statement.
-    public func prepare(_ statement: String, _ bindings: [String: Binding?]) throws -> Statement {
+    public func prepare(_ statement: String, _ bindings: [String: Binding?]) throws -> SqlStatement {
         try prepare(statement).bind(bindings)
     }
 
@@ -230,7 +230,7 @@ public final class Connection {
     /// - Throws: `Result.Error` if query execution fails.
     ///
     /// - Returns: The statement.
-    @discardableResult public func run(_ statement: String, _ bindings: Binding?...) throws -> Statement {
+    @discardableResult public func run(_ statement: String, _ bindings: Binding?...) throws -> SqlStatement {
         try run(statement, bindings)
     }
 
@@ -245,7 +245,7 @@ public final class Connection {
     /// - Throws: `Result.Error` if query execution fails.
     ///
     /// - Returns: The statement.
-    @discardableResult public func run(_ statement: String, _ bindings: [Binding?]) throws -> Statement {
+    @discardableResult public func run(_ statement: String, _ bindings: [Binding?]) throws -> SqlStatement {
         try prepare(statement).run(bindings)
     }
 
@@ -260,7 +260,7 @@ public final class Connection {
     /// - Throws: `Result.Error` if query execution fails.
     ///
     /// - Returns: The statement.
-    @discardableResult public func run(_ statement: String, _ bindings: [String: Binding?]) throws -> Statement {
+    @discardableResult public func run(_ statement: String, _ bindings: [String: Binding?]) throws -> SqlStatement {
         try prepare(statement).run(bindings)
     }
 
@@ -271,7 +271,7 @@ public final class Connection {
     /// - Throws: `Result.Error` if query execution fails.
     ///
     /// - Returns: The statement.
-    @discardableResult public func vacuum() throws -> Statement {
+    @discardableResult public func vacuum() throws -> SqlStatement {
         try run("VACUUM")
     }
 
@@ -678,24 +678,24 @@ public final class Connection {
     ///     Default: `.main`.
     ///
     /// - Returns: A new database backup.
-    public func backup(databaseName: Backup.DatabaseName = .main,
-                       usingConnection targetConnection: Connection,
-                       andDatabaseName targetDatabaseName: Backup.DatabaseName = .main) throws -> Backup {
-        try Backup(sourceConnection: self, sourceName: databaseName, targetConnection: targetConnection,
+    public func backup(databaseName: SqlBackup.DatabaseName = .main,
+                       usingConnection targetConnection: SqlConnection,
+                       andDatabaseName targetDatabaseName: SqlBackup.DatabaseName = .main) throws -> SqlBackup {
+        try SqlBackup(sourceConnection: self, sourceName: databaseName, targetConnection: targetConnection,
                    targetName: targetDatabaseName)
     }
 
     // MARK: - Error Handling
 
     func sync<T>(_ block: () throws -> T) rethrows -> T {
-        if DispatchQueue.getSpecific(key: Connection.queueKey) == queueContext {
+        if DispatchQueue.getSpecific(key: SqlConnection.queueKey) == queueContext {
             return try block()
         } else {
             return try queue.sync(execute: block)
         }
     }
 
-    @discardableResult func check(_ resultCode: Int32, statement: Statement? = nil) throws -> Int32 {
+    @discardableResult func check(_ resultCode: Int32, statement: SqlStatement? = nil) throws -> Int32 {
         guard let error = Result(errorCode: resultCode, connection: self, statement: statement) else {
             return resultCode
         }
@@ -711,7 +711,7 @@ public final class Connection {
 
 }
 
-extension Connection: CustomStringConvertible {
+extension SqlConnection: CustomStringConvertible {
 
     public var description: String {
         String(cString: sqlite3_db_filename(handle, nil))
@@ -719,7 +719,7 @@ extension Connection: CustomStringConvertible {
 
 }
 
-extension Connection.Location: CustomStringConvertible {
+extension SqlConnection.Location: CustomStringConvertible {
 
     public var description: String {
         switch self {

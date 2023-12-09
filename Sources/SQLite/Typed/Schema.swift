@@ -37,8 +37,8 @@ extension Table {
     // MARK: - CREATE TABLE
 
     public func create(temporary: Bool = false, ifNotExists: Bool = false, withoutRowid: Bool = false,
-                       block: (TableBuilder) -> Void) -> String {
-        let builder = TableBuilder()
+                       block: (SqlTableBuilder) -> Void) -> String {
+        let builder = SqlTableBuilder()
 
         block(builder)
 
@@ -215,7 +215,7 @@ extension VirtualTable {
 
 }
 
-public final class TableBuilder {
+public final class SqlTableBuilder {
 
     fileprivate var definitions = [Expressible]()
 

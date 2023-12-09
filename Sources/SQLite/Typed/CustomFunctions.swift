@@ -22,7 +22,7 @@
 // THE SOFTWARE.
 //
 
-public extension Connection {
+public extension SqlConnection {
 
     /// Creates or redefines a custom SQL function.
     ///
